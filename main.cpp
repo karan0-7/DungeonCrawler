@@ -1,84 +1,22 @@
 #include <iostream>
 #include <string>
 #include <array>
-#include "./headers/adventurer.h"
-#include "./headers/monster.h"
+#include <random>
+#include "./adventurer/adventurer.h"
+#include "./monster/monster.h"
+#include "./main.h"
 
-std::array<Adventurer, 3> getAdventurers()
+int getRandomNumber(int min, int max)
 {
-
-    Adventurer thomas{"thomas", Warrior, 100, 100, 85, 30};
-    Adventurer arthur{"arthur", Mage, 150, 150, 50, 20};
-    Adventurer john{"john", Rogue, 180, 180, 85, 10};
-
-    return {thomas, arthur, john};
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(min, max);
+    return dist(gen);
 }
 
-std::array<Monster, 1> getMonsters()
+int getDeadAdventurers(std::array<Adventurer, TOTAL_ADVENTURERS> adventurers)
 {
-
-    Monster ragul{"ragul", 200, 200, 40};
-    Monster azriel{"azriel", 300, 300, 100};
-    Monster lucifer{"lucifer", 400, 400, 140};
-
-    return {ragul};
-}
-
-std::string getAdventurerClassType(AdventurerClasses classType)
-{
-
-    switch (classType)
-    {
-    case Warrior:
-        return "Warrior";
-        break;
-    case Mage:
-        return "Mage";
-        break;
-    case Rogue:
-        return "Rogue";
-        break;
-    default:
-        break;
-    }
-}
-
-std::string getAdventurerAction(AdventurerAction classType)
-{
-
-    switch (classType)
-    {
-    case attack:
-        return "Attack";
-        break;
-    case heal:
-        return "Heal";
-        break;
-    case flee:
-        return "Flee";
-        break;
-    default:
-        break;
-    }
-}
-
-void printAdventurerStats(Adventurer adventurer)
-{
-
-    std::cout << "Name: " << adventurer.name << '\n';
-    std::cout << "Class Type: " << getAdventurerClassType(adventurer.classType) << '\n';
-    std::cout << "Current Health: " << adventurer.currentHealth << '\n';
-    std::cout << "Max Health: " << adventurer.maxHealth << '\n';
-    std::cout << "Attack Power: " << adventurer.attackPower << '\n';
-    std::cout << "Healing Power: " << adventurer.healPower << '\n';
-    std::cout << '\n';
-}
-
-bool isGameOver(std::array<Adventurer, 3> adventurers,
-                std::array<Monster, 1> &monsters)
-{
-    std::cout << "cehccccccccccc" << &monsters[0] << '\n';
-    int deadAdventurers = 0, deadMonsters = 0;
+    int deadAdventurers = 0;
     for (int i = 0; i < adventurers.size(); i++)
     {
         if (adventurers[i].currentHealth <= 0)
@@ -86,6 +24,13 @@ bool isGameOver(std::array<Adventurer, 3> adventurers,
             deadAdventurers++;
         }
     }
+    return deadAdventurers;
+}
+
+int getDeadMonsters(std::array<Monster, TOTAL_MONSTERS> monsters)
+{
+    int deadMonsters = 0;
+
     for (int i = 0; i < monsters.size(); i++)
     {
         if (monsters[i].currentHealth <= 0)
@@ -93,56 +38,98 @@ bool isGameOver(std::array<Adventurer, 3> adventurers,
             deadMonsters++;
         }
     }
-    std::cout << "deadMonsters" << deadMonsters;
+    return deadMonsters;
+}
+
+bool isGameOver(std::array<Adventurer, TOTAL_ADVENTURERS> &adventurers,
+                std::array<Monster, 3> &monsters)
+{
+    const int deadAdventurers = getDeadAdventurers(adventurers);
+    const int deadMonsters = getDeadMonsters(monsters);
+
     return deadAdventurers == adventurers.size() || deadMonsters == monsters.size();
+}
+
+void initiateMonsterAttack(Monster &monster, std::array<Adventurer, TOTAL_ADVENTURERS> &adventurers)
+{
+    Adventurer &adventurerToAttack = adventurers[getRandomNumber(0, 2)];
+    adventurerToAttack.currentHealth -= monster.attackPower;
+}
+
+void initiateAdventurerAttack(Monster &monster, std::array<Adventurer, TOTAL_ADVENTURERS> &adventurers)
+{
+    for (int i = 0; i < adventurers.size(); i++)
+    {
+        std::string chosenAction;
+        printAdventurerStats(adventurers[i]);
+        std::cout << "Please choose an action for adventurer." << '\n';
+        std::cout << "1: " << getAdventurerAction(attack) << '\n';
+        std::cout << "2: " << getAdventurerAction(heal) << '\n';
+        std::cout << "3: " << getAdventurerAction(flee) << '\n';
+        std::cin >> chosenAction;
+        std::cout << chosenAction << '\n';
+
+        if (chosenAction == getAdventurerAction(attack))
+        {
+            monster.currentHealth -= adventurers[i].attackPower;
+        }
+        else if (chosenAction == getAdventurerAction(heal))
+        {
+            adventurers[i].currentHealth += adventurers[i].healPower;
+        }
+        else if (chosenAction == getAdventurerAction(flee))
+        {
+            adventurers[i].currentHealth = 0;
+        }
+
+        if (monster.currentHealth <= 0)
+            return;
+    }
+}
+
+bool isCurrentRoundOver(std::array<Adventurer, TOTAL_ADVENTURERS> adventurers, Monster currentMonster)
+{
+    const int deadAdventurers = getDeadAdventurers(adventurers);
+    return deadAdventurers == adventurers.size() || currentMonster.currentHealth <= 0;
 }
 
 void beginGame()
 {
     int currentRound{0};
-
     std::array<Adventurer, 3> adventurers{getAdventurers()};
-    std::array<Monster, 1> monsters{getMonsters()};
-    std::cout << "startinggg add" << &monsters << '\n';
+    std::array<Monster, 3> monsters{getMonsters()};
 
-    while (!isGameOver(adventurers, monsters))
+    while (currentRound < TOTAL_ROUNDS)
     {
         std::cout << "Beginning round: " << currentRound + 1 << '\n';
         std::cout << '\n';
 
         Monster &currentMonster = monsters[currentRound];
-        std::cout << "currentMonster address" << &currentMonster << '\n';
 
-        for (int i = 0; i < adventurers.size(); i++)
+        while (!isCurrentRoundOver(adventurers, currentMonster))
         {
-            std::string chosenAction;
-            printAdventurerStats(adventurers[i]);
-            std::cout << "Please choose an action for adventurer." << '\n';
-            std::cout << "1: " << getAdventurerAction(attack) << '\n';
-            std::cout << "2: " << getAdventurerAction(heal) << '\n';
-            std::cout << "3: " << getAdventurerAction(flee) << '\n';
-            std::cin >> chosenAction;
-            std::cout << chosenAction << '\n';
-
-            if (chosenAction == getAdventurerAction(attack))
-            {
-                currentMonster.currentHealth -= adventurers[i].attackPower;
-            }
-            else if (chosenAction == getAdventurerAction(heal))
-            {
-                adventurers[i].currentHealth += adventurers[i].healPower;
-            }
-            else if (chosenAction == getAdventurerAction(flee))
-            {
-                adventurers[i].currentHealth = 0;
-            }
 
             std::cout << "Monster current health: " << currentMonster.currentHealth << '\n';
             std::cout << '\n';
-        }
-    }
 
-    std::cout << "Game is over. Thank you for playing.";
+            initiateAdventurerAttack(currentMonster, adventurers);
+
+            if (isGameOver(adventurers, monsters))
+            {
+                std::cout << "Game is over. Thank you for playing.";
+                return;
+            }
+
+            initiateMonsterAttack(currentMonster, adventurers);
+
+            if (isGameOver(adventurers, monsters))
+            {
+                std::cout << "Game is over. Thank you for playing.";
+                return;
+            }
+        }
+        currentRound++;
+    }
 }
 
 int main()

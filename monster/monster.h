@@ -1,4 +1,5 @@
 #include<string>
+#include <array>
 
 struct Monster
 {
@@ -7,3 +8,8 @@ struct Monster
     int maxHealth;
     int attackPower;
 };
+
+ const size_t TOTAL_MONSTERS=3;
+
+
+std::array<Monster,TOTAL_MONSTERS> getMonsters();

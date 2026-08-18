@@ -1,4 +1,5 @@
 #include<string>
+#include <array>
 
 enum AdventurerClasses
 {
@@ -22,3 +23,8 @@ struct Adventurer
     int attackPower;
     int healPower;
 };
+
+std::array<Adventurer, 3> getAdventurers();
+std::string getAdventurerAction(AdventurerAction classType);
+void printAdventurerStats(Adventurer adventurer);
+ const size_t TOTAL_ADVENTURERS=3;
